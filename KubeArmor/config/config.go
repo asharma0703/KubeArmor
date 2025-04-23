@@ -65,6 +65,8 @@ type KubearmorConfig struct {
 	AnnotateResources bool  // enable annotations by kubearmor if kubearmor-controller is not present
 
 	ProcFsMount string // path where procfs is hosted
+
+	DropLogFields []string // fields to exclude from container/host logs
 }
 
 // GlobalCfg Global configuration for Kubearmor
@@ -114,6 +116,7 @@ const (
 	ConfigThrottleSec                    string = "throttleSec"
 	ConfigAnnotateResources              string = "annotateResources"
 	ConfigProcFsMount                    string = "procfsMount"
+	ConfigDropLogFields                  string = "dropLogFields"
 )
 
 func readCmdLineParams() {
@@ -174,6 +177,8 @@ func readCmdLineParams() {
 	annotateResources := flag.Bool(ConfigAnnotateResources, false, "for kubearmor deployment without kubearmor-controller")
 
 	procFsMount := flag.String(ConfigProcFsMount, "/proc", "Path to the BPF filesystem to use for storing maps")
+
+	dropLogFields := flag.String(ConfigDropLogFields, "", "fields to exclude from container/host logs, empty=none (default)")
 
 	flags := []string{}
 	flag.VisitAll(func(f *flag.Flag) {
@@ -241,6 +246,8 @@ func readCmdLineParams() {
 	viper.SetDefault(ConfigAnnotateResources, *annotateResources)
 
 	viper.SetDefault(ConfigProcFsMount, *procFsMount)
+
+	viper.SetDefault(ConfigDropLogFields, *dropLogFields)
 }
 
 // LoadConfig Load configuration
@@ -324,6 +331,8 @@ func LoadConfig() error {
 	GlobalCfg.AnnotateResources = viper.GetBool(ConfigAnnotateResources)
 
 	GlobalCfg.ProcFsMount = viper.GetString(ConfigProcFsMount)
+
+	GlobalCfg.DropLogFields = strings.Split(viper.GetString(ConfigDropLogFields), ",")
 
 	LoadDynamicConfig()
 
