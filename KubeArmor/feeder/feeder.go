@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -749,6 +750,9 @@ func (fd *Feeder) PushLog(log tp.Log) {
 
 		pbLog.Result = log.Result
 
+		// drop any fields specified in config
+		dropLogFields(pbLog, cfg.GlobalCfg.DropLogFields)
+
 		fd.EventStructs.LogLock.Lock()
 		defer fd.EventStructs.LogLock.Unlock()
 		counter := 0
@@ -839,4 +843,14 @@ func (fd *Feeder) ShouldDropAlertsPerContainer(pidNs, mntNs uint32) (bool, bool)
 
 func (fd *Feeder) DeleteAlertMapKey(outkey kl.OuterKey) {
 	delete(fd.AlertMap, OuterKey{PidNs: outkey.PidNs, MntNs: outkey.MntNs})
+}
+
+func dropLogFields(log *pb.Log, dropFields []string) {
+	v := reflect.ValueOf(log).Elem()
+	for _, field := range dropFields {
+		f := v.FieldByName(field)
+		if f.IsValid() && f.CanSet() {
+			f.Set(reflect.Zero(f.Type()))
+		}
+	}
 }
